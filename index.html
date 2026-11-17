@@ -1,0 +1,77 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>My SimpMusic Web</title>
+    <style>
+        body { font-family: system-ui, sans-serif; background: #0f0f0f; color: #fff; max-width: 600px; margin: 0 auto; padding: 20px 15px 100px; }
+        .search-box { display: flex; gap: 8px; margin-bottom: 20px; }
+        input { flex: 1; padding: 12px; border-radius: 8px; border: 1px solid #333; background: #1e1e1e; color: #fff; font-size: 16px; }
+        button { padding: 12px 20px; border-radius: 8px; border: none; background: #1db954; color: #000; font-weight: bold; cursor: pointer; }
+        .song { display: flex; align-items: center; justify-content: space-between; padding: 10px; background: #181818; border-radius: 8px; margin-bottom: 10px; }
+        .song-info { display: flex; align-items: center; gap: 12px; overflow: hidden; }
+        .song img { width: 48px; height: 48px; border-radius: 6px; object-fit: cover; }
+        .title { font-weight: 600; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; max-width: 250px; }
+        .artist { font-size: 13px; color: #aaa; }
+        .player-bar { position: fixed; bottom: 0; left: 0; width: 100%; background: #181818; border-top: 1px solid #282828; padding: 10px 0; text-align: center; }
+        audio { width: 90%; max-width: 600px; height: 40px; }
+    </style>
+</head>
+<body>
+
+    <h2>🎧 My SimpMusic</h2>
+    <div class="search-box">
+        <input type="text" id="query" placeholder="Tìm bài hát, nghệ sĩ..." onkeypress="if(event.key==='Enter') search()">
+        <button onclick="search()">Tìm</button>
+    </div>
+
+    <div id="list"></div>
+
+    <div class="player-bar">
+        <div id="now-playing" style="font-size: 13px; color: #1db954; margin-bottom: 5px;">Chưa phát bài nào</div>
+        <audio id="player" controls autoplay></audio>
+    </div>
+
+    <script>
+        // THAY ĐỔI LINK NÀY THÀNH LINK RENDER CỦA BẠN
+        const API_BASE = "https://simpmusic-api-a2j1.onrender.com";
+
+        async function search() {
+            const q = document.getElementById('query').value.trim();
+            if (!q) return;
+            
+            const list = document.getElementById('list');
+            list.innerHTML = '<p style="color:#aaa;">Đang tìm kiếm...</p>';
+
+            try {
+                const res = await fetch(`${API_BASE}/api/search?q=${encodeURIComponent(q)}`);
+                const songs = await res.json();
+                
+                list.innerHTML = songs.map(s => `
+                    <div class="song">
+                        <div class="song-info">
+                            <img src="${s.thumbnail}" alt="">
+                            <div>
+                                <div class="title">${s.title}</div>
+                                <div class="artist">${s.artist}</div>
+                            </div>
+                        </div>
+                        <button onclick="play('${s.id}', '${s.title.replace(/'/g, "\\'")}')">Nghe</button>
+                    </div>
+                `).join('');
+            } catch (e) {
+                list.innerHTML = '<p style="color:#ff5555;">Lỗi kết nối server (Đợi 30s để Render thức dậy rồi thử lại nhé!)</p>';
+            }
+        }
+
+        function play(id, title) {
+            document.getElementById('now-playing').innerText = `Đang phát: ${title}`;
+            const player = document.getElementById('player');
+            // Gắn thẳng link stream từ server Render vào thẻ audio
+            player.src = `${API_BASE}/api/stream/${id}`;
+            player.play();
+        }
+    </script>
+</body>
+</html>
